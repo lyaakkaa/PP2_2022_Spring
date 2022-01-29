@@ -1,10 +1,10 @@
 def to_lower(s):
-    a=''
+    a = ''
     for c in s:
-        if ord('A')<=ord(c)<=ord('Z'):
-            a+=chr(ord(c)+32)
+        if ord('A') <= ord(c) <= ord('Z'):
+            a += chr(ord(c)+32) 
         else:
-            a+=c
+            a += c
     return a
-s=input()
+s = input()
 print(to_lower(s))
