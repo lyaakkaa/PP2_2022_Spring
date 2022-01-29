@@ -1,13 +1,6 @@
-import random
-
-
-s=input()
-x=input()
-ans = []
-for i in range(len(s)):
-    if s[i]==x:
-        ans.append(i)
-if len(ans)==1:
-    print(ans[0])
-else:
-    print(ans[0],ans[-1])
+s = input()
+x = input()
+if x in s:
+    print(s.find(x), end=' ') 
+    if s.rfind(x) != s.find(x):
+        print(s.rfind(x))
