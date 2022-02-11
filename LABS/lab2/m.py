@@ -10,7 +10,5 @@ while True:
         dates.append((dd,mm,yy))
 
 
-for c in sorted(dates,key = lambda x : (x[2],x[1],x[0])):
-    print(*c)
-
-
+for i in sorted(dates,key = lambda x : (x[2],x[1],x[0])):
+    print(*i)
