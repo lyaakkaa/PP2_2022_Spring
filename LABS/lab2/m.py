@@ -2,14 +2,13 @@
 
 dates = []
 while True:
-    dat = [i for i in input().split()]
-    if dat[0] == '0':
+    dat = input()
+    if dat == '0':
         break
     else:
-        d = dat[2] + ' ' + dat[1] + ' ' + dat[0]
-        dates.append(d)
+        dd,mm,yy = dat.split()
+        dates.append((dd,mm,yy))
 
 
-for c in sorted(dates):
-    a = c.split()
-    print(a[2],a[1],a[0])
+for c in sorted(dates,key = lambda x : (x[2],x[1],x[0])):
+    print(*c)
