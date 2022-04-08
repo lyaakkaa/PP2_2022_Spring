@@ -77,6 +77,7 @@ class Snake: # Класс змейки
         self.dx = self.speed  #скорость по х
         self.dy = 0 # скорость по у 
         self.destination = '' # направление змейки 
+        self.color = GREEN
 
     
     def move(self):
@@ -120,19 +121,19 @@ class Snake: # Класс змейки
             self.body.append([1000, 1000])
             score += 1
             
-    def collide_self(self):
+    def collide_self(self):  # проверка столкновения с самим собой
         global finished, lose
         if self.body[0] in self.body[1:]:
             finished = True
             lose = True
 
-    def check_food(self, f: Food):
+    def check_food(self, f: Food): # проверка чтобы еда не появилась в змейке
         if [f.x, f.y] in self.body:
             f.redraw()
 
 restart = True
 
-while restart:
+while restart: 
 
     level = 0
     score = 0 
@@ -143,14 +144,14 @@ while restart:
     f = Food()
     FPS = 5
 
-    while not finished:
+    while not finished: # начинаем наш игровой цикл 
         clock.tick(FPS)
         events = pygame.event.get()
         for event in events:
-            if event.type == pygame.QUIT:
+            if event.type == pygame.QUIT: # закрытие окна 
                 finished = True
                 restart = False
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_r: # смена уровня
                 level += 1
         
         screen.fill(PINK)    
@@ -170,28 +171,28 @@ while restart:
         s.collide_self()
         s.check_food(f)
        
-        if score == 5:
+        if score == 5: # переход на новый уровень 
             score = 0
             level += 1
             FPS += 5
-        if level == 4:
+        if level == 4: # условие выигрыша 
             win = True
 
-        walls_coor = open(f'wall{level}.txt', 'r').readlines()
+        walls_coor = open(f'wall{level}.txt', 'r').readlines()  # открываем файл с уровнем
         walls = []
         for i, line in enumerate(walls_coor):
             for j, each in enumerate(line):
                 if each == '#':
-                    walls.append(Wall(j * cell, i * cell))
+                    walls.append(Wall(j * cell, i * cell)) # добавляем все стенки в наш массив
         for wall in walls:
-            wall.draw()
+            wall.draw() # отрисовка стен 
             if f.x == wall.x and f.y == wall.y:
-                f.redraw()
-            if s.body[0][0] == wall.x and s.body[0][1] == wall.y:
+                f.redraw() # проверка чтобы еда не появилась в стенке 
+            if s.body[0][0] == wall.x and s.body[0][1] == wall.y: # если змейка столкнулась со стеной 
                 #finished = True
                 lose = True
 
-        while lose or win:
+        while lose or win: # цикл проигрыша или выигрыша 
             pygame.draw.rect(screen, WHITE, (100, 100, 200, 200))
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
