@@ -1,0 +1,397 @@
+import pygame
+from random import randrange
+from random import choice
+from config import params
+import psycopg2
+
+
+username = input("Enter your name:\n")
+
+db  = psycopg2.connect(**params)
+cursor = db.cursor()
+
+pygame.init() 
+
+WIDTH, HEIGHT = 400, 450 # высота и ширина окна
+cell = 20 #размер клетки 
+
+#Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (175, 238, 238)
+PINK = (255,192,203)
+ORANGE = (255, 165, 0)
+YELLOW = (255, 255, 0)
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT)) #экран
+pygame.display.set_caption('SNAKE') # название окна 
+
+background = pygame.image.load('./snake_img/background.png') # загружаем картинку заднего фона
+background = pygame.transform.scale(background,(WIDTH, HEIGHT- 50)) # трансформируем по размерам окна - 50 потому что нижняя часть без фона
+
+apple = pygame.image.load('./snake_img/apple.png') # загружаем картинку яблока 
+donut = pygame.image.load('./snake_img/donut.png') # загружаем картинку яблока 
+banana = pygame.image.load('./snake_img/banana.png')
+cherry = pygame.image.load('./snake_img/cherry.png')
+arbuz = pygame.image.load('./snake_img/watermelon.png')
+lisf_food = [apple, banana, cherry, arbuz]
+
+apple_Score = pygame.image.load('snake_img/apple_score.png') # загружаем картинку яблока 
+level_up = pygame.image.load('snake_img/level-up.png') # загружаем картикну левел апа
+br = pygame.image.load('./snake_img/brick-wall.png') # загружаем картинку кирпичика
+
+font = pygame.font.SysFont("Verdana", 20) # шрифт  
+font1 = pygame.font.SysFont("Verdana", 14) # шрифт
+font2 = pygame.font.SysFont("Verdana", 10) # шрифт  
+clock = pygame.time.Clock() # время
+sound = pygame.mixer.Sound('./snake_sounds/biting.wav') # звук откусывания яблока 
+
+NEXT = pygame.USEREVENT 
+pygame.time.set_timer(NEXT, 5000)
+
+
+class Food:  # класс Еды 
+    def __init__(self, image):
+        self.x = randrange(0, WIDTH, cell)
+        self.y = randrange(0, HEIGHT - 50, cell) 
+        self.image = image
+
+    def draw(self):  # функция отрисовки 
+        fruit_rect = pygame.Rect(self.x, self.y, cell, cell)  
+        #screen.blit(apple, fruit_rect) 
+        screen.blit(self.image, fruit_rect)
+        #pygame.draw.rect(screen, RED, (self.x, self.y, cell, cell)) 
+
+    def redraw(self): # функция отрисовки заново 
+        self.x = randrange(0, WIDTH, cell)  
+        self.y = randrange(0, HEIGHT - 50, cell) 
+        self.image = choice(lisf_food)
+        
+class Superfood:  # класс Еды 
+    def __init__(self):
+        self.x = randrange(0, WIDTH, cell)
+        self.y = randrange(0, HEIGHT - 50, cell)
+        
+    def draw(self):  # функция отрисовки 
+        fruit_rect = pygame.Rect(self.x, self.y, cell, cell)  
+        #screen.blit(apple, fruit_rect) 
+        screen.blit(donut, fruit_rect)
+        #pygame.draw.rect(screen, RED, (self.x, self.y, cell, cell)) 
+    def redraw(self): # функция отрисовки заново 
+        self.x = randrange(0, WIDTH, cell)  
+        self.y = randrange(0, HEIGHT - 50, cell) 
+
+class Wall: # Класс стенок 
+    def __init__(self, x, y):
+        self.x = x # координаты стенки по х
+        self.y = y # координаты стенки по у 
+
+        # создаем пространство для картинки кирпичиков
+        self.surf = pygame.Surface((cell, cell))
+        self.rect = self.surf.get_rect(topleft = (self.x, self.y)) 
+
+    def draw(self):  # функция отрисовки
+        self.surf.blit(br ,(0 , 0))
+        screen.blit(self.surf, self.rect)
+
+    '''def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def draw(self):
+        pygame.draw.rect(screen, BLUE, (self.x, self.y, cell, cell))'''
+
+class Snake: # Класс змейки
+    def __init__(self):
+        self.speed = cell # скорсоть змейки
+        self.body = [[80, 80]] # массив змейки 
+        self.dx = self.speed  #скорость по х
+        self.dy = 0 # скорость по у 
+        self.destination = '' # направление змейки 
+        self.color = GREEN
+
+    def move(self):
+        for event in events: # проверяем все действия 
+            if event.type == pygame.KEYDOWN: # если нажимаем на клавишу 
+                if event.key == pygame.K_LEFT and self.destination != 'right': # если нажимаем на левую клавишу и змейка не направлена на право
+                    self.dx = -self.speed
+                    self.dy = 0
+                    self.destination = 'left'
+                if event.key == pygame.K_RIGHT and self.destination != 'left': # если нажимаем на правую клавишу и змейка не направлена на лево
+                    self.dx = self.speed
+                    self.dy = 0
+                    self.destination = 'right'
+                if event.key == pygame.K_UP and self.destination != 'down': # если нажимаем на верхнюю клавишу и змейка не направлена вниз
+                    self.dx = 0
+                    self.dy = -self.speed
+                    self.destination = 'up'
+                if event.key == pygame.K_DOWN and self.destination != 'up': # если нажимаем на нижнюю клавишу и змейка не направлена на вверх
+                    self.dx = 0
+                    self.dy = self.speed
+                    self.destination = 'down'
+
+        for i in range(len(self.body) - 1, 0, -1): # добавление блока в тело змейки 
+            self.body[i][0] = self.body[i - 1][0]
+            self.body[i][1] = self.body[i - 1][1]
+        
+        self.body[0][0] += self.dx  # двигаем постоянно
+        self.body[0][1] += self.dy  # двигаем постоянно
+
+        self.body[0][0] %= WIDTH  # проверяем чтоб голова по х не прошла за окно
+        self.body[0][1] %= HEIGHT - 50 # проверяем чтоб голова по у не прошла за окно
+
+    def draw(self): # функция отрисовки 
+        for block in self.body:
+            pygame.draw.rect(screen, self.color, (block[0], block[1], cell, cell)) 
+    
+    def collide_food(self, f): #функция проверки столкновения с едой 
+        global score
+        global cnt_food
+        if self.body[0][0] == f.x and self.body[0][1] == f.y:
+            sound.play()
+            self.body.append([1000, 1000])
+            cnt_food += 1
+            if f.image == apple:
+                score += 1
+            elif f.image == cherry:
+                score += 2
+            elif f.image == banana:
+                score += 3
+            elif f.image == arbuz:
+                score += 4
+            else:
+                score += 1
+
+    def collide_food_super(self, f): #функция проверки столкновения с едой 
+        global score, cnt_food
+        
+        if self.body[0][0] == f.x and self.body[0][1] == f.y:
+            sound.play()
+            self.body.append([1000, 1000])
+            cnt_food += 1
+            score += 15
+
+    def collide_self(self):  # проверка столкновения с самим собой
+        global finished, lose
+        if self.body[0] in self.body[1:]:
+            finished = True
+            lose = True
+
+    def check_food(self, f: Food): # проверка чтобы еда не появилась в змейке
+        if [f.x, f.y] in self.body:
+            f.redraw()
+    
+    def check_food_super(self, f: Food): # проверка чтобы еда не появилась в змейке
+        if [f.x, f.y] in self.body:
+            f.redraw()
+
+restart = True
+flag = False
+while restart: 
+    level = 1        
+    score = 0
+    pause = False 
+    exist = False
+
+    finished = False
+    lose = False
+    win = False
+
+    s = Snake()
+    f = Food(choice(lisf_food))
+    superfood = Superfood()
+
+    FPS = 5
+    cnt_food = 0
+    
+    while not finished: 
+        clock.tick(FPS)
+   
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT: 
+                finished = True
+                restart = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_r: # смена уровня
+                level += 1
+            if event.type == NEXT:
+                superfood.redraw()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+                pause = True
+          
+        screen.fill(PINK)    
+        screen.blit(background, (0, 0))
+        
+        screen.blit(apple_Score, (25,410))
+        screen.blit(level_up,(345,410))
+
+        text_game_over = font1.render(f'  Game Over! your score {score}', True, RED)
+        text_win = font1.render(f'             You won!', True, RED)
+        restart_text = font1.render(f'Tap space to restart', True, RED)
+
+        f.draw()
+        s.draw()
+        superfood.draw()
+     
+        s.move()
+        s.collide_food(f)
+        s.collide_food_super(superfood)
+       
+        s.collide_self()
+
+        s.check_food(f)
+        s.check_food_super(superfood)
+    
+        walls_coor = open(f'./levels/wall{level}.txt', 'r').readlines()
+        walls = []
+        for i, line in enumerate(walls_coor):
+            for j, each in enumerate(line):
+                if each == '#':
+                    walls.append(Wall(j * 20, i * 20))
+        
+        for wall in walls:
+            wall.draw() # отрисовка стен 
+
+            if f.x == wall.x and f.y == wall.y:
+                f.redraw() # проверка чтобы еда не появилась в стенке
+                
+            if superfood.x == wall.x and superfood.y == wall.y:
+                superfood.redraw() # проверка чтобы еда не появилась в стенке
+
+            if s.body[0][0] == wall.x and s.body[0][1] == wall.y: # если змейка столкнулась со стеной 
+                finished = True
+                lose = True
+                         
+                
+        if cnt_food % 5 == 0 and cnt_food != 0: 
+            level += 1
+            cnt_food = 0
+            #FPS += 3
+        if level == 5 : # условие выигрыша 
+            win = True
+
+        pausing = font2.render(f'GAME IS PAUSED! YOUR SCORE {score}', True, BLACK)
+        on_level = font2.render(f'at the level {level}', True, BLACK)
+        while pause:
+            pygame.draw.rect(screen, WHITE, (100, 100, 200, 200))
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    restart = False
+                    finished = True
+                    pause = False
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_u:
+                    pause = False
+            if pause:
+                screen.blit(pausing, (WIDTH // 2 - 84 , HEIGHT // 2 - 50))
+                screen.blit(on_level, (WIDTH // 2 - 34 , HEIGHT // 2 - 30))
+                pygame.display.update()
+
+                insert_int = '''
+                INSERT INTO snake VALUES (%s, %s, %s);
+                '''
+                try:
+                    get = f'''
+                        SELECT high_score, level FROM snake WHERE username = '{username}';
+                    '''
+                    cursor.execute(get)
+                    output = cursor.fetchone()
+                    high_score = output[0]
+                    lvl = output[1]
+                    exist = True
+                except:
+                    pass
+
+                if exist:
+                    if score > high_score:
+                        update_sc = '''
+                            UPDATE snake SET high_score = %s WHERE username = %s;
+                        '''
+                        cursor.execute(update_sc, (score,username))
+                    if level > lvl:
+                        update_l = '''
+                            UPDATE snake SET level = %s WHERE username = %s;
+                        '''
+                        cursor.execute(update_l, (level,username))
+                else:
+                    cursor.execute(insert_int, (f'{username}', f'{score}', f'{level}'))
+        #     cursor.close()
+        #     db.commit()
+        #     db.close()
+        pygame.display.flip()
+
+        while lose or win: # цикл проигрыша или выигрыша 
+            if lose:
+                insert_into = '''
+                INSERT INTO snake VALUES (%s, %s, %s);
+                '''
+                try:
+                    get = f'''
+                        SELECT high_score, level FROM snake WHERE username = '{username}';
+                    '''
+                    cursor.execute(get)
+                    output = cursor.fetchone()
+                    high_score = output[0]
+                    lvl = output[1]
+                    exist = True
+                except:
+                    pass
+                if exist:
+                    if score > high_score:
+                        update = '''
+                            UPDATE snake SET high_score = %s WHERE username = %s;
+                        '''
+                        cursor.execute(update,(score,username))
+                    elif level > lvl:
+                        update_l = '''
+                            UPDATE snake SET level = %s WHERE username = %s;
+                        '''
+                        cursor.execute(update_l,(level,username))
+                else:
+                    cursor.execute(insert_into, (f'{username}', f'{score}', f'{level}'))
+                cursor.close()
+                db.commit()
+                db.close()
+            
+            #finished = True
+            pygame.display.flip()
+            if win:
+                screen.blit(text_win, (WIDTH // 2 - 100, HEIGHT // 2 - 50))
+                screen.blit(restart_text, (WIDTH // 2 - 74, HEIGHT // 2 - 30))
+            if lose:
+                screen.blit(text_game_over, (WIDTH // 2 - 100, HEIGHT // 2 - 50))
+                screen.blit(restart_text, (WIDTH // 2 - 74, HEIGHT // 2 - 30))
+            pygame.draw.rect(screen, WHITE, (100, 100, 200, 200))
+            
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    restart = False
+                    finished = True
+                    lose = False
+                    win = False
+                    pause = False
+                
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                    lose = False
+                    win = False
+                    pause = False
+                    finished = True
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_u:
+                    pause = False
+
+            pygame.display.flip()
+        
+        render_score = font.render(f'{score}', True, RED)
+        render_level_up = font.render(f'{level}', True, YELLOW)
+
+        screen.blit(render_score,(55, 410))
+        screen.blit(render_level_up,(325, 410))
+        pygame.display.flip()
+
+        pygame.display.flip()
+    pygame.display.flip()
+pygame.quit()
+
+
+
